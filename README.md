@@ -8,7 +8,7 @@ Clone the Repository:
 
 bash
 Copy code
-git clone https://github.com/your-username/your-django-app.git
+git clone https://github.com/rajendra55544/assignment.git
 cd your-django-app
 Create and Activate Virtual Environment:
 
