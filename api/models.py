@@ -14,13 +14,16 @@ class CustomUser(AbstractUser):
 class UserUploads(models.Model):
     user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)
     file_type = models.CharField(max_length=100)
-    file = models.FileField(upload_to='documents/', validators=[FileExtensionValidator(allowed_extensions=['pdf','txt','text','xls', 'xlsx'])])
+    file_name = models.CharField(max_length=200)
+
+class Files(models.Model):
+    user_file = models.ForeignKey(UserUploads,on_delete=models.CASCADE)
+    file = models.FileField(upload_to='documents/', validators=[FileExtensionValidator(allowed_extensions=['pdf','txt','text','xls', 'xlsx','docx'])])
+    file_version = models.CharField(max_length=20)
     uploadtime = models.DateField(auto_now_add=True)
 
-
-
 class Address(models.Model):
-    user= models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user= models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     first_address = models.CharField(max_length=255)
     second_address = models.CharField(max_length=255,null=True)

@@ -2,7 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth import get_user_model
-from .models import UserUploads,Address
+from .models import UserUploads,Address,Files
+from django.core.validators import FileExtensionValidator
+
 User = get_user_model()
 
 class UsersRegisterSerializer(serializers.ModelSerializer):
@@ -51,9 +53,34 @@ class AdminLoginSerializer(serializers.ModelSerializer):
 class Uploadfile(serializers.ModelSerializer):
     class Meta:
         model = UserUploads
-        fields  = ('file',)
+        fields  = ('user','file_type','file_name')
+
+class UserFile(serializers.ModelSerializer):
+    class Meta:
+        model = Files
+        fields =('file',)
+
+
+class UserFiles(serializers.ModelSerializer):
+    class Meta:
+        model = Files
+        fields =('file','user_file','file_version')
+
+class FileUploadGet(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+    class Meta:
+        model = Files
+        # exclude = ('user_file',)
+        fields = ('id','file','file_version')
+    
+    
+    def get_file(self, obj):
+        if obj.file:
+            return self.context['request'].build_absolute_uri(obj.file.url)
+        return None
 
 class FileUploadSerializers(serializers.ModelSerializer):
+    files = FileUploadGet(many=True,read_only=True,source='files_set')
     class Meta:
         model = UserUploads
         # fields  = '__all__'

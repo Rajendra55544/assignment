@@ -6,12 +6,15 @@ from .serializers import (UsersLoginSerializer,
                           Uploadfile,
                           FileUploadSerializers,AdminLoginSerializer
                           ,Get_Address_Serializers,
-                          ProfileUpdateSerializers)
+                          ProfileUpdateSerializers,
+                          UserFile,
+                          UserFiles)
 from rest_framework.response import Response
+from django.db.models import Prefetch,Subquery
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import UserUploads,Address
+from .models import UserUploads,Address,Files
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth import get_user_model
 from .adminpermission import IsAdminPermission
@@ -23,16 +26,12 @@ class UserHome(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = (IsAuthenticated,)
     def get(self,request,*args,**kwargs):
-        instance = UserUploads.objects.filter(user=request.user.pk)
-        serializer = FileUploadSerializers(instance=instance,many=True)
-        response = []
-        for data in serializer.data:
 
-            data['filename'] = os.path.basename(data['file'])
-            data['file'] = "http://localhost:8000"+ str(data['file'])
-            response.append(data)
-
-        return Response(response,status=status.HTTP_200_OK)
+        instance = UserUploads.objects.filter(user=request.user.pk).prefetch_related(
+            Prefetch('files_set', queryset=Files.objects.all() )
+        ).all()
+        serializer = FileUploadSerializers(instance=instance,many=True,context={"request":request})
+        return Response(serializer.data,status=status.HTTP_200_OK)
 
 
 class FileUpload_View(APIView):
@@ -53,13 +52,43 @@ class FileUpload_View(APIView):
         return None  # Return None if no matching category is found
 
     def post(self, request, *args, **kwargs):
-        serializer = Uploadfile(data=request.data)
+        # serializer = Uploadfile(data=request.data)
+        # print(request.data)
+        serializer = UserFile(data=request.data)
         if serializer.is_valid(raise_exception=True):
             data = serializer.validated_data
-            data['user'] = User.objects.get(pk=request.user.pk)
-            data['file_type'] =self.get_category_by_extension(data['file'].name.split('.')[-1]) 
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            filename = data['file'].name
+            
+            query = UserUploads.objects.filter(file_name = filename)
+            print(query)
+            if query.exists():
+                file_v = "V"+str(len(Files.objects.filter(user_file=query[0].pk))+1)
+                User_data = {}
+                User_data['file'] = data['file']
+                User_data["user_file"] = query[0].pk
+                User_data["file_version"]  = file_v
+                user_files_serailizer = UserFiles(data=User_data)
+                user_files_serailizer.is_valid(raise_exception=True)
+                user_files_serailizer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                user_upload = {}
+                user_upload['file_type'] = self.get_category_by_extension(data['file'].name.split('.')[-1])
+                user_upload["user"] = request.user.pk
+                user_upload["file_name"]  = data['file'].name
+                user_serailizer = Uploadfile(data=user_upload)
+                user_serailizer.is_valid(raise_exception=True)
+                usr_obj= user_serailizer.save()
+                if usr_obj:
+                    User_data = {}
+                    User_data['file'] = data['file']
+                    User_data["user_file"] = usr_obj.id
+                    User_data["file_version"]  = "V1"
+                    user_files_serailizer = UserFiles(data=User_data)
+                    user_files_serailizer.is_valid(raise_exception=True)
+                    user_files_serailizer.save()
+                    
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)    
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
