@@ -15,5 +15,7 @@ urlpatterns = [
     path(r'byfiles/',views.byfiles,name="byfiles"),
     path(r'profile/',views.profile,name="profile"),
     path(r'deshboard/',views.deshboard,name="admin"),
-    path(r'admin_user/',views.admin_user,name="admin-login")
+    path(r'admin_user/',views.admin_user,name="admin-login"),
+    path(r'profile_user/',views.profile_user,name="profile_user"),
+    
 ]

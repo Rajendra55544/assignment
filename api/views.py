@@ -5,7 +5,8 @@ from .serializers import (UsersLoginSerializer,
                           UsersRegisterSerializer,
                           Uploadfile,
                           FileUploadSerializers,AdminLoginSerializer
-                          ,Get_Address_Serializers)
+                          ,Get_Address_Serializers,
+                          ProfileUpdateSerializers)
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -80,9 +81,12 @@ class Profile(APIView):
         return Response(response,status=status.HTTP_200_OK)
 
     def post(self,request,*args,**kwargs):
+        serializer = ProfileUpdateSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instance = User.objects.get(pk=request.user.pk)
-        instance.name = request.data.get("name")
-        instance.phone_number = request.data.get("phone")
+
+        # instance.name = request.data.get("name")
+        # instance.phone_number = request.data.get("phone")
         instance = instance.save()
         response = {
             "msg":"profile Scessful Updated"
@@ -90,6 +94,35 @@ class Profile(APIView):
         return Response(response,status=status.HTTP_200_OK)
 
 profile = Profile.as_view()
+
+
+class User_Profile(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (IsAuthenticated,)
+
+    def post(self,request,*args,**kwargs):
+        
+        instance = User.objects.get(pk=request.user.pk)
+        serializer = ProfileUpdateSerializers(instance, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            response = {
+                "msg":"profile Image Scessful Updated"
+            }
+            return Response(response,status=status.HTTP_200_OK)
+
+            
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+profile_user = User_Profile.as_view()
+
+
+
+
+
+
+
+
 
 
 class User_LoginView(views.APIView):
@@ -107,6 +140,7 @@ class User_LoginView(views.APIView):
              'user':{ 
                 "user_id":user.pk,
                 "name":user.name,
+                "file": "http://localhost:8000/media/" + str(user.User_profile),
             }
         }
         return Response(response_data)

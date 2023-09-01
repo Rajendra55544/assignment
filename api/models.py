@@ -6,6 +6,7 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
+    User_profile = models.ImageField(upload_to='user_profile/', validators=[FileExtensionValidator(allowed_extensions=['jpg','png'])])
 
 
 

@@ -59,6 +59,16 @@ class FileUploadSerializers(serializers.ModelSerializer):
         # fields  = '__all__'
         exclude = ('user',)
 
+class ProfileUpdateSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # fields  = '__all__'
+        fields = ('User_profile',)
+    
+    def update(self, instance, validated_data):
+        instance.User_profile = validated_data.get('User_profile', instance.User_profile)
+        instance.save()
+        return instance
 
 
 class Get_Address_Serializers(serializers.ModelSerializer):
